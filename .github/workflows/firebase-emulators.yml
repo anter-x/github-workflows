@@ -1,0 +1,9 @@
+name: Start firebase emulators
+
+on:
+    workflow_call:
+
+jobs:
+    setup:
+        - run: |
+          apt-get install -y openjdk-11-jdk ca-certificates-java

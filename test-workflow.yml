@@ -1,0 +1,8 @@
+name: Test workflows
+
+on:
+    push:
+
+jobs:
+    call-firebase-emulators:
+        uses: ./.github/workflows/firebase-emulators.yml
