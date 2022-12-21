@@ -5,5 +5,8 @@ on:
 
 jobs:
     setup:
-        - run: |
-          apt-get install -y openjdk-11-jdk ca-certificates-java
+        timeout-minutes: 5
+        runs-on: ubuntu-latest
+        steps:
+          - run: |
+              apt-get install -y openjdk-11-jdk ca-certificates-java
