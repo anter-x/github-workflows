@@ -11,5 +11,4 @@ jobs:
           - name: Install firebase tools with dependencies
             run: |
               sudo apt-get install openjdk-11-jdk ca-certificates-java -y
-              update-ca-certificates -f
               npm install -g firebase-tools
