@@ -41,14 +41,14 @@ jobs:
 
             - id: branches
               run: |
-                if [ ${PRE_PRELEASE}]; then
-                    echo "branches=${BRANCHES}" >> $GITHUB_OUTPUT
+                if [ ${{ inputs.pre-release }} = 'true']
+                then
+                    echo "branches=${BRANCH}" >> $GITHUB_OUTPUT
                 else
                     echo "branches=${MASTER}" >> $GITHUB_OUTPUT
                 fi
               env:
-                  PRE_PRELEASE: ${{ inputs.pre-release }}
-                  BRANCHES: '["master", {"name": "${{ env.CI_REF_NAME_SLUG }}", "prerelease": "beta-${{ env.CI_SHA_SHORT}}"}]'
+                  BRANCH: '["master", {"name": "${{ env.CI_REF_NAME_SLUG }}", "prerelease": "beta-${{ env.CI_SHA_SHORT}}"}]'
                   MASTER: '["master"]'
 
 
