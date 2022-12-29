@@ -1,0 +1,55 @@
+name: Run unit tests
+
+on:
+    workflow_call:
+        inputs:
+            node-version:
+                type: number
+                required: false
+                default: 18
+
+            timeout-minutes:
+                type: number
+                required: false
+                default: 5
+                description: 'Tests running timeout'
+
+            run-emulators:
+                type: boolean
+                required: false
+                default: false
+                description: 'Run firebase emulators before run tests, the serve:ci and firebase.json should be provided'
+
+        secrets:
+            npm-token:
+                description: 'A token to connect to private npm registry'
+                required: true
+
+jobs:
+    tests:
+        timeout-minutes: ${{ inputs.timeout-minutes }}
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: ${{ inputs.node-version }}
+                  cache: 'npm'
+                  cache-dependency-path: package-lock.json
+
+            - run: |
+                  echo //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN} >> .npmrc
+                  npm ci
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
+
+            - name: Run firebase emulators
+              if: ${{ inputs.run-emulators }}
+              run: |
+                  npm run serve:ci
+                  npx wait-on http://localhost:4400/ -t 60000
+              # workaround to check emulators readiness
+
+            - run: npm run test
+              env:
+                  NODE_ENV: ci
