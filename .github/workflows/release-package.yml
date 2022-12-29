@@ -1,0 +1,66 @@
+name: Publish npm package
+
+on:
+    workflow_call:
+        inputs:
+            node-version:
+                type: number
+                required: false
+                default: 18
+
+            pre-release:
+                type: boolean
+                required: false
+                default: true
+                description: 'If true make beta release or release otherwise'
+
+        secrets:
+            npm-token:
+                description: 'A token to connect to private npm registry'
+                required: true
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: ${{ inputs.node-version }}
+                  cache: 'npm'
+                  cache-dependency-path: package-lock.json
+
+            - run: |
+                  echo //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN} >> .npmrc
+                  npm ci
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
+            - run: npm run build
+
+            - uses: FranzDiebold/github-env-vars-action@v2
+
+            - id: branches
+              run: |
+                if [ ${PRE_PRELEASE}]; then
+                    echo "branches=${BRANCHES}" >> $GITHUB_OUTPUT
+                else
+                    echo "branches=${MASTER}" >> $GITHUB_OUTPUT
+                fi
+              env:
+                  PRE_PRELEASE: ${{ inputs.pre-release }}
+                  BRANCHES: '["master", {"name": "${{ env.CI_REF_NAME_SLUG }}", "prerelease": "beta-${{ env.CI_SHA_SHORT}}"}]'
+                  MASTER: '["master"]'
+
+
+            - uses: cycjimmy/semantic-release-action@v3
+              id: semantic
+              with:
+                  dry_run: false
+                  branches: ${{ steps.branches.outputs.branches }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.npm-token }}
+                  NPM_TOKEN: ${{ secrets.npm-token }}
+
+            - run: echo "$OUTPUTS"
+              env:
+                  OUTPUTS: ${{ toJson(steps.semantic.outputs) }}
