@@ -41,7 +41,7 @@ jobs:
 
             - id: branches
               run: |
-                if [ ${{ inputs.pre-release }} = true]
+                if [ ${{ inputs.pre-release }} = true ]
                 then
                     echo "branches=${BRANCH}" >> $GITHUB_OUTPUT
                 else
