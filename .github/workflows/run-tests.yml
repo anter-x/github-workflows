@@ -47,7 +47,7 @@ jobs:
               if: ${{ inputs.run-emulators }}
               run: |
                   npm run serve:ci
-                  npx wait-on http://localhost:4400/ -t 60000
+                  npm run wait:ci --if-present
               # workaround to check emulators readiness
 
             - name: Run unit tests
