@@ -1,4 +1,4 @@
-name: Run unit tests
+name: Run tests
 
 on:
     workflow_call:
@@ -50,6 +50,12 @@ jobs:
                   npx wait-on http://localhost:4400/ -t 60000
               # workaround to check emulators readiness
 
-            - run: npm run test
+            - name: Run unit tests
+              run: npm run test --if-present
+              env:
+                  NODE_ENV: ci
+
+            - name: Run e2e tests
+              run: npm run e2e --if-present
               env:
                   NODE_ENV: ci
