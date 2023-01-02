@@ -35,7 +35,7 @@ jobs:
                   npm ci
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
-            - run: npm run build
+            - run: npm run build --if-present
 
             - uses: FranzDiebold/github-env-vars-action@v2
 
