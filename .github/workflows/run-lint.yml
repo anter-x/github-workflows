@@ -28,5 +28,5 @@ jobs:
                   npm ci --force
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
-            - run: npm run prettier-check
+            - run: npm run format:check
             - run: npm run lint

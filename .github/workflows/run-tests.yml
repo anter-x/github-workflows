@@ -26,9 +26,48 @@ on:
                 required: true
 
 jobs:
+    setup-test-chunks:
+        name: Setup chunks for tests
+        runs-on: ubuntu-latest
+        timeout-minutes: 3
+        outputs:
+            chunks: ${{ steps.set-chunks.outputs.chunks }}
+            chunks-id: ${{ steps.set-chunks-id.outputs.chunks-id }}
+        steps:
+            - uses: actions/checkout@v3
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: ${{ inputs.node-version }}
+                  cache: 'npm'
+                  cache-dependency-path: package-lock.json
+
+            - run: |
+                  echo //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN} >> .npmrc
+                  npm ci --force
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
+
+            - name: Make chunks of test files
+              id: set-chunks
+              run: |
+                CHUNKS=$(npm run e2e:chunks --if-present --silent)
+                echo "::set-output name=chunks::$CHUNKS"
+
+            - name: Set Chunks ID
+              id: set-chunks-id
+              run: echo "::set-output name=chunks-id::$(echo $CHUNKS | jq -cM 'to_entries | map(.key)')"
+              env:
+                CHUNKS: ${{ steps.set-chunks.outputs.chunks }}
+
+
     tests:
         timeout-minutes: ${{ inputs.timeout-minutes }}
         runs-on: ubuntu-latest
+        needs:
+            - setup-test-chunks
+        strategy:
+            matrix:
+                chunk-id: ${{ fromJson(needs.setup-test-chunks.outputs.chunks-id) }}
         steps:
             - uses: actions/checkout@v3
             - uses: actions/setup-node@v3
@@ -56,6 +95,10 @@ jobs:
                   NODE_ENV: ci
 
             - name: Run e2e tests
-              run: npm run e2e --if-present
+              run: |
+                  RUN_TESTS=$(echo $CHUNKS | jq --raw-output '.[${{ matrix.chunk-id }}]')
+                  echo "Run tests: $RUN_TESTS"
+                  npm run e2e --if-present --silent -- $RUN_TESTS
               env:
                   NODE_ENV: ci
+                  CHUNKS: ${{ needs.setup-test-chunks.outputs.chunks }}
