@@ -51,11 +51,13 @@ jobs:
               id: set-chunks
               run: |
                 CHUNKS=$(npm run e2e:chunks --if-present --silent)
-                echo "::set-output name=chunks::$CHUNKS"
+                echo "chunks=${CHUNKS}" >> $GITHUB_OUTPUT
 
             - name: Set Chunks ID
               id: set-chunks-id
-              run: echo "::set-output name=chunks-id::$(echo $CHUNKS | jq -cM 'to_entries | map(.key)')"
+              run: |
+                  CHUNKS_ID=$(echo $CHUNKS | jq -cM 'to_entries | map(.key)')"
+                  echo "chunks-id=${CHUNKS_ID}" >> $GITHUB_OUTPUT
               env:
                 CHUNKS: ${{ steps.set-chunks.outputs.chunks }}
 
