@@ -56,7 +56,7 @@ jobs:
             - name: Set Chunks ID
               id: set-chunks-id
               run: |
-                  CHUNKS_ID=$(echo $CHUNKS | jq -cM 'to_entries | map(.key)')"
+                  CHUNKS_ID=$(echo $CHUNKS | jq -cM 'to_entries | map(.key)')
                   echo "chunks-id=${CHUNKS_ID}" >> $GITHUB_OUTPUT
               env:
                 CHUNKS: ${{ steps.set-chunks.outputs.chunks }}
