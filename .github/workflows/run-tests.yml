@@ -20,6 +20,16 @@ on:
                 default: false
                 description: 'Run firebase emulators before run tests, the serve:ci and firebase.json should be provided'
 
+            run-unit-tests:
+                type: boolean
+                required: false
+                default: true
+
+            run-e2e-tests:
+                type: boolean
+                required: false
+                default: true
+
         secrets:
             npm-token:
                 description: 'A token to connect to private npm registry'
@@ -33,6 +43,8 @@ jobs:
         outputs:
             chunks: ${{ steps.set-chunks.outputs.chunks }}
             chunks-id: ${{ steps.set-chunks-id.outputs.chunks-id }}
+            e2e-chunks: ${{ steps.set-chunks.outputs.e2e-chunks }}
+            e2e-chunks-id: ${{ steps.set-chunks-id.outputs.e2e-chunks-id }}
         steps:
             - uses: actions/checkout@v3
             - uses: actions/setup-node@v3
@@ -50,19 +62,25 @@ jobs:
             - name: Make chunks of test files
               id: set-chunks
               run: |
-                CHUNKS=$(npm run e2e:chunks --if-present --silent)
+                CHUNKS=$(npm run test:chunks --if-present --silent)
+                E2E_CHUNKS=$(npm run e2e:chunks --if-present --silent)
                 echo "chunks=${CHUNKS}" >> $GITHUB_OUTPUT
+                echo "e2e-chunks=${E2E_CHUNKS}" >> $GITHUB_OUTPUT
 
             - name: Set Chunks ID
               id: set-chunks-id
               run: |
                   CHUNKS_ID=$(echo $CHUNKS | jq -cM 'to_entries | map(.key)')
+                  E2E_CHUNKS_ID=$(echo $E2E_CHUNKS | jq -cM 'to_entries | map(.key)')
                   echo "chunks-id=${CHUNKS_ID}" >> $GITHUB_OUTPUT
+                  echo "e2e-chunks-id=${E2E_CHUNKS_ID}" >> $GITHUB_OUTPUT
               env:
                 CHUNKS: ${{ steps.set-chunks.outputs.chunks }}
+                E2E_CHUNKS: ${{ steps.set-chunks.outputs.e2e-chunks }}
 
 
-    tests:
+    unit-tests:
+        if: ${{ inputs.run-unit-tests }}
         timeout-minutes: ${{ inputs.timeout-minutes }}
         runs-on: ubuntu-latest
         needs:
@@ -92,9 +110,43 @@ jobs:
               # workaround to check emulators readiness
 
             - name: Run unit tests
-              run: npm run test --if-present
+              run: |
+                  RUN_TESTS=$(echo $CHUNKS | jq --raw-output '.[${{ matrix.chunk-id }}]')
+                  echo "Run tests: $RUN_TESTS"
+                  npm run test --if-present --silent -- $RUN_TESTS
               env:
                   NODE_ENV: ci
+                  CHUNKS: ${{ needs.setup-test-chunks.outputs.chunks }}
+
+    e2e-tests:
+        if: ${{ inputs.run-e2e-tests }}
+        timeout-minutes: ${{ inputs.timeout-minutes }}
+        runs-on: ubuntu-latest
+        needs:
+            - setup-test-chunks
+        strategy:
+            matrix:
+                chunk-id: ${{ fromJson(needs.setup-test-chunks.outputs.e2e-chunks-id) }}
+        steps:
+            - uses: actions/checkout@v3
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: ${{ inputs.node-version }}
+                  cache: 'npm'
+                  cache-dependency-path: package-lock.json
+
+            - run: |
+                  echo //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN} >> .npmrc
+                  npm ci --force
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
+
+            - name: Run firebase emulators
+              if: ${{ inputs.run-emulators }}
+              run: |
+                  npm run serve:ci
+                  npm run wait:ci --if-present
+              # workaround to check emulators readiness
 
             - name: Run e2e tests
               run: |
@@ -103,4 +155,4 @@ jobs:
                   npm run e2e --if-present --silent -- $RUN_TESTS
               env:
                   NODE_ENV: ci
-                  CHUNKS: ${{ needs.setup-test-chunks.outputs.chunks }}
+                  CHUNKS: ${{ needs.setup-test-chunks.outputs.e2e-chunks }}
