@@ -46,8 +46,8 @@ jobs:
             e2e-chunks: ${{ steps.set-chunks.outputs.e2e-chunks }}
             e2e-chunks-id: ${{ steps.set-chunks-id.outputs.e2e-chunks-id }}
         steps:
-            - uses: actions/checkout@v3
-            - uses: actions/setup-node@v3
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
               with:
                   node-version: ${{ inputs.node-version }}
                   cache: 'npm'
@@ -89,8 +89,8 @@ jobs:
             matrix:
                 chunk-id: ${{ fromJson(needs.setup-test-chunks.outputs.chunks-id) }}
         steps:
-            - uses: actions/checkout@v3
-            - uses: actions/setup-node@v3
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
               with:
                   node-version: ${{ inputs.node-version }}
                   cache: 'npm'
@@ -128,8 +128,8 @@ jobs:
             matrix:
                 chunk-id: ${{ fromJson(needs.setup-test-chunks.outputs.e2e-chunks-id) }}
         steps:
-            - uses: actions/checkout@v3
-            - uses: actions/setup-node@v3
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
               with:
                   node-version: ${{ inputs.node-version }}
                   cache: 'npm'
