@@ -6,7 +6,7 @@ on:
             node-version:
                 type: number
                 required: false
-                default: 18
+                default: 20
         secrets:
             npm-token:
                 description: 'A token to connect to private npm registry'
